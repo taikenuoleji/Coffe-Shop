@@ -1,0 +1,140 @@
+<view class="home-page">
+  <!-- Status Bar Area -->
+  <view class="status-bar">
+    <view class="status-time">9:41</view>
+    <view class="status-icons">
+      <image class="signal-icon" src="../../images/assets/14.svg" mode="aspectFit"></image>
+      <image class="wifi-icon" src="../../images/assets/15.svg" mode="aspectFit"></image>
+      <image class="battery-icon" src="../../images/assets/13.svg" mode="aspectFit"></image>
+    </view>
+    <image class="carrier-icon" src="../../images/assets/16.svg" mode="aspectFit"></image>
+  </view>
+
+  <!-- Header with dark gradient background -->
+  <view class="header">
+    <!-- Location Selector -->
+    <view class="location-selector" bindtap="onLocationTap">
+      <view class="location-info">
+        <text class="location-label">位置</text>
+        <view class="location-value">
+          <text>北京市朝阳区</text>
+          <image class="arrow-down" src="../../images/assets/2.svg" mode="aspectFit"></image>
+        </view>
+      </view>
+    </view>
+
+    <!-- Search Bar -->
+    <view class="search-container">
+      <view class="search-box" bindtap="onSearchTap">
+        <image class="search-icon" src="../../images/assets/3.svg" mode="aspectFit"></image>
+        <text class="search-placeholder">搜索咖啡</text>
+      </view>
+      <view class="filter-btn" bindtap="onFilterTap">
+        <image class="filter-icon" src="../../images/assets/4.svg" mode="aspectFit"></image>
+      </view>
+    </view>
+
+    <!-- Promo Banner -->
+    <view class="promo-banner">
+      <image class="promo-bg" src="../../images/assets/10.png" mode="aspectFill"></image>
+      <view class="promo-content">
+        <view class="promo-tag">
+          <text>优惠</text>
+        </view>
+        <view class="promo-text">
+          <text>买一送一</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- Content Area -->
+  <view class="content">
+    <!-- Category Tabs -->
+    <view class="category-tabs">
+      <view 
+        wx:for="{{categories}}" 
+        wx:key="id" 
+        class="category-tab {{activeCategory === index ? 'active' : ''}}"
+        data-index="{{index}}"
+        bindtap="onCategoryTap">
+        <text>{{item.name}}</text>
+      </view>
+    </view>
+
+    <!-- Loading State -->
+    <view class="loading-container" wx:if="{{loading}}">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">加载中...</text>
+    </view>
+
+    <!-- Error State -->
+    <view class="error-container" wx:elif="{{errorMsg}}">
+      <text class="error-text">{{errorMsg}}</text>
+      <view class="retry-btn" bindtap="loadGoodsList">
+        <text>重新加载</text>
+      </view>
+    </view>
+
+    <!-- Empty State -->
+    <view class="empty-container" wx:elif="{{products.length === 0}}">
+      <text class="empty-text">暂无商品</text>
+    </view>
+
+    <!-- Product Grid -->
+    <scroll-view wx:else class="product-scroll" scroll-y="true">
+      <view class="product-grid">
+        <block wx:for="{{products}}" wx:key="_id">
+          <view class="product-card" data-id="{{item._id}}" bindtap="onProductTap">
+            <view class="product-image-container">
+              <image class="product-image" src="{{item.image}}" mode="aspectFill"></image>
+              <view class="rating-badge">
+                <image class="star-icon" src="../../images/assets/1.svg" mode="aspectFit"></image>
+                <text class="rating-text">{{item.rating}}</text>
+              </view>
+            </view>
+            <view class="product-info">
+              <view class="product-details">
+                <text class="product-name">{{item.name}}</text>
+                <text class="product-desc">{{item.description}}</text>
+              </view>
+              <view class="product-bottom">
+                <text class="product-price">$ {{item.price}}</text>
+                <view class="add-btn" data-id="{{item._id}}" catchtap="onAddToCart">
+                  <image class="plus-icon" src="../../images/assets/11.svg" mode="aspectFit"></image>
+                </view>
+              </view>
+            </view>
+          </view>
+        </block>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- Bottom Navigation -->
+  <view class="bottom-nav">
+    <view class="nav-item home-item" data-type="home" bindtap="onNavTap">
+      <view class="nav-icon-container">
+        <image class="nav-icon" src="../../images/assets/5.svg" mode="aspectFit"></image>
+        <image class="nav-underline" src="../../images/assets/6.svg" mode="aspectFit"></image>
+      </view>
+    </view>
+    <view class="nav-item" data-type="favorites" bindtap="onNavTap">
+      <image class="nav-icon" src="../../images/assets/7.svg" mode="aspectFit"></image>
+    </view>
+    <view class="nav-item cart-item" data-type="cart" bindtap="onNavTap">
+      <view class="cart-icon-wrapper">
+        <image class="nav-icon" src="../../images/assets/8.svg" mode="aspectFit"></image>
+        <view class="cart-badge" wx:if="{{cartCount > 0}}">
+          <text class="badge-text">{{cartCount > 99 ? '99+' : cartCount}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="nav-item" data-type="notification" bindtap="onNavTap">
+      <image class="nav-icon" src="../../images/assets/9.svg" mode="aspectFit"></image>
+    </view>
+  </view>
+
+  <!-- Home Indicator -->
+  <view class="home-indicator"></view>
+</view>

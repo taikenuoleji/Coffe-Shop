@@ -1,0 +1,24 @@
+<view class="tab-bar">
+  <view 
+    class="tab-item {{active === 0 ? 'active' : ''}}" 
+    data-index="0"
+    bindtap="onTabTap"
+  >
+    <text class="tab-icon-text">🏠</text>
+    <text class="tab-text">首页</text>
+  </view>
+
+  <view 
+    class="tab-item {{active === 1 ? 'active' : ''}}" 
+    data-index="1"
+    bindtap="onTabTap"
+  >
+    <view class="cart-icon-wrapper">
+      <text class="tab-icon-text">🛒</text>
+      <view class="cart-badge" wx:if="{{cartCount > 0}}">
+        <text class="badge-text">{{cartCount > 99 ? '99+' : cartCount}}</text>
+      </view>
+    </view>
+    <text class="tab-text">购物车</text>
+  </view>
+</view>

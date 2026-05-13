@@ -1,0 +1,104 @@
+<view class="detail-page">
+  <!-- Status Bar Area -->
+  <view class="status-bar">
+    <view class="status-time">9:41</view>
+    <view class="status-icons">
+      <image class="signal-icon" src="../../images/assets/14.svg" mode="aspectFit"></image>
+      <image class="wifi-icon" src="../../images/assets/15.svg" mode="aspectFit"></image>
+      <image class="battery-icon" src="../../images/assets/13.svg" mode="aspectFit"></image>
+    </view>
+    <image class="carrier-icon" src="../../images/assets/16.svg" mode="aspectFit"></image>
+  </view>
+
+  <!-- Navigation Bar -->
+  <view class="nav-bar">
+    <view class="nav-back" bindtap="onBack">
+      <image src="../../images/assets/7.svg" mode="aspectFit"></image>
+    </view>
+    <text class="nav-title">商品详情</text>
+    <view class="nav-share">
+      <image src="../../images/assets/9.svg" mode="aspectFit"></image>
+    </view>
+  </view>
+
+  <!-- Loading State -->
+  <view class="loading-container" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- Error State -->
+  <view class="error-container" wx:elif="{{errorMsg}}">
+    <text class="error-text">{{errorMsg}}</text>
+    <view class="retry-btn" bindtap="onRetry">
+      <text>重新加载</text>
+    </view>
+  </view>
+
+  <!-- Content -->
+  <scroll-view class="content" scroll-y="true" wx:else>
+    <!-- Product Image -->
+    <view class="product-image-section">
+      <image class="product-image" src="{{goods.image}}" mode="aspectFill"></image>
+      <view class="rating-badge">
+        <image class="star-icon" src="../../images/assets/1.svg" mode="aspectFit"></image>
+        <text class="rating-text">{{goods.rating || 4.8}}</text>
+      </view>
+    </view>
+
+    <!-- Product Info -->
+    <view class="product-info-section">
+      <view class="price-row">
+        <text class="current-price">¥ {{goods.price}}</text>
+        <text class="original-price" wx:if="{{goods.originalPrice}}">¥ {{goods.originalPrice}}</text>
+      </view>
+      <text class="product-name">{{goods.name}}</text>
+      <text class="product-desc">{{goods.description}}</text>
+    </view>
+
+    <!-- Tags -->
+    <view class="tags-section" wx:if="{{goods.tags && goods.tags.length > 0}}">
+      <view class="tag" wx:for="{{goods.tags}}" wx:key="index">
+        <text>{{item}}</text>
+      </view>
+    </view>
+
+    <!-- Product Details -->
+    <view class="detail-section">
+      <text class="section-title">商品详情</text>
+      <view class="detail-item">
+        <text class="detail-label">分类</text>
+        <text class="detail-value">{{goods.category}}</text>
+      </view>
+      <view class="detail-item">
+        <text class="detail-label">库存</text>
+        <text class="detail-value">{{goods.stock}} 件</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- Bottom Action Bar -->
+  <view class="action-bar">
+    <view class="action-icons">
+      <view class="action-icon-item cart-with-badge" bindtap="onGoToCart">
+        <image src="../../images/assets/7.svg" mode="aspectFit"></image>
+        <view class="cart-badge" wx:if="{{cartQuantity > 0}}">
+          <text>{{cartQuantity > 99 ? '99+' : cartQuantity}}</text>
+        </view>
+        <text>购物车</text>
+      </view>
+      <view class="action-icon-item" bindtap="onFavorite">
+        <image src="../../images/assets/7.svg" mode="aspectFit"></image>
+        <text>收藏</text>
+      </view>
+    </view>
+    <view class="action-buttons">
+      <view class="add-cart-btn" bindtap="onAddToCart">
+        <text>加入购物车</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- Home Indicator -->
+  <view class="home-indicator"></view>
+</view>

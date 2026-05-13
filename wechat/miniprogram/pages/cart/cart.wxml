@@ -1,0 +1,94 @@
+<view class="cart-container">
+  <!-- 购物车为空 -->
+  <view class="empty-cart" wx:if="{{cartList.length === 0 && !loading}}">
+    <image class="empty-icon" src="../../../images/assets/coffee-cup.png" mode="aspectFit"></image>
+    <text class="empty-text">购物车是空的</text>
+    <text class="empty-hint">快去挑选心仪的咖啡吧</text>
+    <view class="go-shopping" bindtap="goShopping">
+      <text>去选购</text>
+    </view>
+  </view>
+
+  <!-- 加载中 -->
+  <view class="loading-container" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 购物车列表 -->
+  <view class="cart-content" wx:if="{{cartList.length > 0 && !loading}}">
+    <!-- 购物车头部 -->
+    <view class="cart-header">
+      <text class="cart-title">我的购物车</text>
+      <text class="clear-btn" bindtap="onClearCart">清空</text>
+    </view>
+
+    <!-- 商家信息 -->
+    <view class="shop-info">
+      <image class="shop-icon" src="../../../images/assets/coffee-cup.png" mode="aspectFit"></image>
+      <text class="shop-name">咖啡商城</text>
+    </view>
+
+    <!-- 商品列表 -->
+    <view class="goods-list">
+      <view class="goods-item" wx:for="{{cartList}}" wx:key="_id">
+        <!-- 选择按钮 -->
+        <view class="checkbox-wrapper" data-index="{{index}}" bindtap="onToggleSelect">
+          <view class="checkbox {{item.selected ? 'checked' : ''}}">
+            <view class="check-icon" wx:if="{{item.selected}}"></view>
+          </view>
+        </view>
+
+        <!-- 商品图片 -->
+        <image class="goods-image" src="{{item.image}}" mode="aspectFill"></image>
+
+        <!-- 商品信息 -->
+        <view class="goods-info">
+          <text class="goods-name">{{item.name}}</text>
+          <text class="goods-category">{{item.category}}</text>
+          <view class="goods-price-row">
+            <text class="goods-price">¥{{item.price}}</text>
+          </view>
+        </view>
+
+        <!-- 数量控制 -->
+        <view class="quantity-control">
+          <view class="qty-btn minus" data-index="{{index}}" bindtap="onDecrease">
+            <text>-</text>
+          </view>
+          <text class="qty-num">{{item.quantity}}</text>
+          <view class="qty-btn plus" data-index="{{index}}" bindtap="onIncrease">
+            <text>+</text>
+          </view>
+        </view>
+
+        <!-- 删除按钮 -->
+        <view class="delete-btn" data-id="{{item._id}}" bindtap="onDeleteItem">
+          <text>×</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部结算栏 -->
+    <view class="bottom-bar">
+      <!-- 全选 -->
+      <view class="select-all" bindtap="onToggleSelectAll">
+        <view class="checkbox {{isAllSelected ? 'checked' : ''}}">
+          <view class="check-icon" wx:if="{{isAllSelected}}"></view>
+        </view>
+        <text class="select-all-text">全选</text>
+      </view>
+
+      <!-- 合计 -->
+      <view class="total-wrapper">
+        <text class="total-label">合计：</text>
+        <text class="total-price">¥{{totalPrice}}</text>
+      </view>
+
+      <!-- 结算按钮 -->
+      <view class="checkout-btn {{selectedCount === 0 ? 'disabled' : ''}}" bindtap="onCheckout">
+        <text>结算({{selectedCount}})</text>
+      </view>
+    </view>
+  </view>
+</view>
