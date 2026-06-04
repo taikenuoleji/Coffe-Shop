@@ -3,7 +3,7 @@
 .cart-container {
   min-height: 100vh;
   background-color: #f5f5f5;
-  padding-bottom: 140rpx;
+  padding-bottom: calc(220rpx + env(safe-area-inset-bottom));
 }
 
 /* 空购物车 */
@@ -262,14 +262,14 @@
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: calc(100rpx + env(safe-area-inset-bottom));
   height: 120rpx;
   background-color: #fff;
   display: flex;
   align-items: center;
   padding: 0 24rpx;
-  padding-bottom: env(safe-area-inset-bottom);
   box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
+  z-index: 100;
 }
 
 /* 全选 */

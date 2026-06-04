@@ -58,9 +58,7 @@ Page({
     });
 
     // 更新 tabBar 购物车数量
-    if (this.updateTabBarCartCount) {
-      this.updateTabBarCartCount();
-    }
+    app.updateTabBarCartCount();
   },
 
   /**
@@ -235,9 +233,7 @@ Page({
     });
 
     // 更新 tabBar 购物车数量
-    if (this.updateTabBarCartCount) {
-      this.updateTabBarCartCount();
-    }
+    app.updateTabBarCartCount();
 
     // 通知所有页面购物车已更新（包括首页）
     app.notifyCartUpdate();
