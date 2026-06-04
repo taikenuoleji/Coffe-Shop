@@ -70,60 +70,67 @@ Page({
   },
 
   /**
-   * 从云数据库加载商品列表
+   * 从云数据库加载商品列表（直接查询数据库，稳定性更好）
    */
   loadGoodsList() {
     this.setData({ loading: true, errorMsg: '' });
     
     wx.showLoading({ title: '加载中...' });
     
-    wx.cloud
-      .callFunction({
-        name: 'initGoods',
-        data: {
-          action: 'getGoodsList'
-        }
-      })
+    const db = wx.cloud.database();
+    db.collection('goods')
+      .where({ isAvailable: true })
+      .orderBy('category', 'asc')
+      .get()
       .then((res) => {
         wx.hideLoading();
         console.log('商品列表返回：', res);
         
-        if (res.result.code === 0) {
-          // 添加 rating 字段（如果没有从数据库返回）
-          const products = (res.result.data || []).map(item => ({
-            ...item,
-            rating: item.rating || 4.8
-          }));
-          
-          this.setData({
-            loading: false,
-            products: products
-          });
-        } else {
-          // 接口返回错误，使用空数组
-          console.error('获取商品列表失败：', res.result.message);
-          this.setData({
-            loading: false,
-            products: [],
-            errorMsg: res.result.message || '获取商品列表失败'
-          });
-        }
+        const products = (res.data || []).map(item => ({
+          ...item,
+          rating: item.rating || 4.8
+        }));
+        
+        this.setData({
+          loading: false,
+          products: products
+        });
       })
       .catch((err) => {
         wx.hideLoading();
         console.error('加载商品列表失败：', err);
-        this.setData({
-          loading: false,
-          products: [],
-          errorMsg: '网络错误，请检查网络连接'
-        });
         
-        wx.showToast({
-          title: '加载失败，请下拉刷新',
-          icon: 'none',
-          duration: 2000
-        });
+        // 直接查询失败，尝试云函数作为备选方案
+        this.loadGoodsListFallback();
       });
+  },
+
+  /**
+   * 备选方案：通过云函数加载商品列表
+   */
+  loadGoodsListFallback() {
+    wx.showLoading({ title: '加载中...' });
+    
+    wx.cloud.callFunction({
+      name: 'initGoods',
+      data: { action: 'getGoodsList' }
+    }).then((res) => {
+      wx.hideLoading();
+      if (res.result.code === 0) {
+        const products = (res.result.data || []).map(item => ({
+          ...item,
+          rating: item.rating || 4.8
+        }));
+        this.setData({ loading: false, products: products });
+      } else {
+        this.setData({ loading: false, products: [], errorMsg: '数据加载失败' });
+      }
+    }).catch((err) => {
+      wx.hideLoading();
+      console.error('备选方案也失败：', err);
+      this.setData({ loading: false, products: [], errorMsg: '网络错误，请检查网络连接' });
+      wx.showToast({ title: '加载失败，请下拉刷新', icon: 'none', duration: 2000 });
+    });
   },
 
   /**
@@ -149,46 +156,30 @@ Page({
   },
 
   /**
-   * 根据分类筛选商品
+   * 根据分类筛选商品（直接查询数据库）
    * @param {string} categoryName - 分类名称
    */
   filterByCategory(categoryName) {
     wx.showLoading({ title: '加载中...' });
     
-    wx.cloud
-      .callFunction({
-        name: 'initGoods',
-        data: {
-          action: 'getGoodsList',
-          data: { category: categoryName }
-        }
-      })
+    const db = wx.cloud.database();
+    const query = categoryName && categoryName !== '全部咖啡'
+      ? db.collection('goods').where({ isAvailable: true, category: categoryName })
+      : db.collection('goods').where({ isAvailable: true });
+    
+    query.orderBy('category', 'asc').get()
       .then((res) => {
         wx.hideLoading();
-        
-        if (res.result.code === 0) {
-          const products = (res.result.data || []).map(item => ({
-            ...item,
-            rating: item.rating || 4.8
-          }));
-          
-          this.setData({
-            products: products
-          });
-        } else {
-          wx.showToast({
-            title: res.result.message || '筛选失败',
-            icon: 'none'
-          });
-        }
+        const products = (res.data || []).map(item => ({
+          ...item,
+          rating: item.rating || 4.8
+        }));
+        this.setData({ products: products });
       })
       .catch((err) => {
         wx.hideLoading();
         console.error('筛选商品失败：', err);
-        wx.showToast({
-          title: '网络错误',
-          icon: 'none'
-        });
+        wx.showToast({ title: '网络错误', icon: 'none' });
       });
   },
 

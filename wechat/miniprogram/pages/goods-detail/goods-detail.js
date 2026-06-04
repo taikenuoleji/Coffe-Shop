@@ -55,38 +55,41 @@ Page({
 
     wx.showLoading({ title: "加载中..." });
 
-    wx.cloud
-      .callFunction({
-        name: "initGoods",
-        data: {
-          action: "getGoodsDetail",
-          data: { goodsId: goodsId }
-        }
-      })
+    const db = wx.cloud.database();
+    db.collection("goods").doc(goodsId).get()
       .then((res) => {
         wx.hideLoading();
         console.log("商品详情返回：", res);
 
-        if (res.result.code === 0) {
-          const goods = res.result.data || {};
-          this.setData({
-            loading: false,
-            goods: goods,
-            cartQuantity: app.getGoodsQuantityInCart(goods._id)
-          });
-        } else {
-          this.setData({
-            loading: false,
-            errorMsg: res.result.message || "获取商品详情失败",
-          });
-        }
+        const goods = res.data || {};
+        this.setData({
+          loading: false,
+          goods: goods,
+          cartQuantity: app.getGoodsQuantityInCart(goods._id)
+        });
       })
       .catch((err) => {
         wx.hideLoading();
-        console.error("加载商品详情失败：", err);
-        this.setData({
-          loading: false,
-          errorMsg: "网络错误，请检查网络连接",
+        console.error("加载商品详情失败（直查），尝试云函数：", err);
+        
+        // 直查失败时尝试云函数
+        wx.cloud.callFunction({
+          name: "initGoods",
+          data: { action: "getGoodsDetail", data: { goodsId: goodsId } }
+        }).then((res) => {
+          if (res.result.code === 0) {
+            const goods = res.result.data || {};
+            this.setData({
+              loading: false,
+              goods: goods,
+              cartQuantity: app.getGoodsQuantityInCart(goods._id)
+            });
+          } else {
+            this.setData({ loading: false, errorMsg: "获取商品详情失败" });
+          }
+        }).catch((cfErr) => {
+          console.error("云函数也失败：", cfErr);
+          this.setData({ loading: false, errorMsg: "网络错误，请检查网络连接" });
         });
       });
   },
