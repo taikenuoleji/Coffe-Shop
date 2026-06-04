@@ -24,12 +24,29 @@
     </view>
 
     <!-- Search Bar -->
-    <view class="search-container">
-      <view class="search-box" bindtap="onSearchTap">
+    <view class="search-container {{isSearching ? 'searching' : ''}}">
+      <view class="search-box {{isSearching ? 'active' : ''}}">
         <image class="search-icon" src="../../images/assets/3.svg" mode="aspectFit"></image>
-        <text class="search-placeholder">搜索咖啡</text>
+        <input 
+          class="search-input"
+          type="text"
+          placeholder="搜索咖啡"
+          placeholder-class="search-placeholder"
+          value="{{searchKeyword}}"
+          focus="{{false}}"
+          confirm-type="search"
+          bindinput="onSearchInput"
+          bindconfirm="onSearchConfirm"
+          bindfocus="onSearchFocus"
+        />
+        <view class="search-clear" wx:if="{{searchKeyword}}" bindtap="onSearchClear">
+          <text class="clear-icon">✕</text>
+        </view>
       </view>
-      <view class="filter-btn" bindtap="onFilterTap">
+      <view class="search-cancel" wx:if="{{isSearching}}" bindtap="onSearchCancel">
+        <text>取消</text>
+      </view>
+      <view class="filter-btn" wx:else bindtap="onFilterTap">
         <image class="filter-icon" src="../../images/assets/4.svg" mode="aspectFit"></image>
       </view>
     </view>
@@ -69,20 +86,34 @@
     </view>
 
     <!-- Error State -->
-    <view class="error-container" wx:elif="{{errorMsg}}">
+    <view class="error-container" wx:elif="{{errorMsg && !isSearching}}">
       <text class="error-text">{{errorMsg}}</text>
       <view class="retry-btn" bindtap="loadGoodsList">
         <text>重新加载</text>
       </view>
     </view>
 
-    <!-- Empty State -->
-    <view class="empty-container" wx:elif="{{products.length === 0}}">
+    <!-- Search Empty State -->
+    <view class="search-empty-container" wx:elif="{{isSearching && searchEmpty}}">
+      <image class="search-empty-icon" src="../../images/assets/coffee-cup.png" mode="aspectFit"></image>
+      <text class="search-empty-title">未找到相关商品</text>
+      <text class="search-empty-hint">试试「拿铁」「摩卡」等其他关键词</text>
+      <view class="search-reset-btn" bindtap="onSearchCancel">
+        <text>查看全部商品</text>
+      </view>
+    </view>
+
+    <!-- Category Empty State -->
+    <view class="empty-container" wx:elif="{{products.length === 0 && !loading && !isSearching}}">
       <text class="empty-text">暂无商品</text>
     </view>
 
     <!-- Product Grid -->
     <scroll-view wx:else class="product-scroll" scroll-y="true">
+      <!-- 搜索中显示结果提示 -->
+      <view class="search-result-hint" wx:if="{{isSearching && !searchEmpty}}">
+        <text>找到 {{products.length}} 个相关商品</text>
+      </view>
       <view class="product-grid">
         <block wx:for="{{products}}" wx:key="_id">
           <view class="product-card" data-id="{{item._id}}" bindtap="onProductTap">

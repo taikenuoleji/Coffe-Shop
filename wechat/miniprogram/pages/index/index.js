@@ -16,14 +16,21 @@ Page({
       { id: 5, name: '馥芮白' }
     ],
     
-    // 商品列表（从数据库加载）
+    // 商品列表（当前展示）
     products: [],
+    // 全部商品（缓存，用于搜索/筛选）
+    allProducts: [],
     
     // 加载状态
     loading: true,
     
     // 错误信息
     errorMsg: "",
+    
+    // 搜索相关
+    searchKeyword: '',
+    isSearching: false,
+    searchEmpty: false,
     
     // 购物车数量
     cartCount: 0,
@@ -32,19 +39,19 @@ Page({
     favoritesCount: 0
   },
 
+  // 防抖定时器
+  _searchTimer: null,
+
   onLoad() {
-    // 页面加载时获取商品列表
     console.log('Coffee Shop Home Page Loaded');
     this.loadGoodsList();
   },
 
   onShow() {
-    // 每次显示页面时刷新购物车数量和总金额
     this.updateCartInfo();
   },
 
   onReady() {
-    // 页面渲染完成后注册购物车更新回调
     app.registerCartUpdate && app.registerCartUpdate(() => {
       this.updateCartInfo();
     });
@@ -74,7 +81,6 @@ Page({
    */
   loadGoodsList() {
     this.setData({ loading: true, errorMsg: '' });
-    
     wx.showLoading({ title: '加载中...' });
     
     const db = wx.cloud.database();
@@ -84,16 +90,16 @@ Page({
       .get()
       .then((res) => {
         wx.hideLoading();
-        console.log('商品列表返回：', res);
-        
         const products = (res.data || []).map(item => ({
           ...item,
-          rating: item.rating || 4.8
+          rating: item.rating || 4.8,
+          _searchText: this.buildSearchText(item)
         }));
         
         this.setData({
           loading: false,
-          products: products
+          products: products,
+          allProducts: products
         });
       })
       .catch((err) => {
@@ -110,7 +116,6 @@ Page({
    */
   loadGoodsListFallback() {
     wx.showLoading({ title: '加载中...' });
-    
     wx.cloud.callFunction({
       name: 'initGoods',
       data: { action: 'getGoodsList' }
@@ -119,18 +124,27 @@ Page({
       if (res.result.code === 0) {
         const products = (res.result.data || []).map(item => ({
           ...item,
-          rating: item.rating || 4.8
+          rating: item.rating || 4.8,
+          _searchText: this.buildSearchText(item)
         }));
-        this.setData({ loading: false, products: products });
+        this.setData({ loading: false, products: products, allProducts: products });
       } else {
         this.setData({ loading: false, products: [], errorMsg: '数据加载失败' });
       }
     }).catch((err) => {
       wx.hideLoading();
-      console.error('备选方案也失败：', err);
+      console.error('备选也失败：', err);
       this.setData({ loading: false, products: [], errorMsg: '网络错误，请检查网络连接' });
       wx.showToast({ title: '加载失败，请下拉刷新', icon: 'none', duration: 2000 });
     });
+  },
+
+  /**
+   * 构建搜索文本（拼接 name + description + tags）
+   */
+  buildSearchText(item) {
+    const tags = (item.tags || []).join(' ');
+    return [item.name, item.description, item.category, tags].filter(Boolean).join(' ').toLowerCase();
   },
 
   /**
@@ -138,20 +152,121 @@ Page({
    */
   onPullDownRefresh() {
     this.loadGoodsList();
-    // 停止下拉刷新动画
     wx.stopPullDownRefresh();
   },
 
-  // 分类切换
+  // ────────── 搜索功能 ──────────
+
+  /**
+   * 搜索输入（带防抖 300ms）
+   */
+  onSearchInput(e) {
+    const keyword = e.detail.value || '';
+    this.setData({ searchKeyword: keyword });
+
+    // 清除之前的定时器
+    if (this._searchTimer) clearTimeout(this._searchTimer);
+
+    if (!keyword.trim()) {
+      // 空关键字：退出搜索模式，恢复分类筛选
+      this.exitSearchMode();
+      return;
+    }
+
+    // 防抖
+    this._searchTimer = setTimeout(() => {
+      this.performSearch(keyword.trim());
+    }, 300);
+  },
+
+  /**
+   * 搜索确认（点击键盘搜索按钮）
+   */
+  onSearchConfirm(e) {
+    const keyword = e.detail.value || this.data.searchKeyword;
+    if (keyword.trim()) {
+      this.performSearch(keyword.trim());
+    }
+  },
+
+  /**
+   * 执行搜索
+   */
+  performSearch(keyword) {
+    const lower = keyword.toLowerCase();
+    const { allProducts } = this.data;
+    
+    const filtered = allProducts.filter(item => {
+      const searchText = item._searchText || this.buildSearchText(item);
+      return searchText.includes(lower);
+    });
+
+    const empty = filtered.length === 0;
+
+    this.setData({
+      isSearching: true,
+      searchEmpty: empty,
+      searchKeyword: keyword,
+      activeCategory: 0,
+      products: filtered,
+      loading: false,
+      errorMsg: ''
+    });
+  },
+
+  /**
+   * 清空搜索
+   */
+  onSearchClear() {
+    this.setData({ searchKeyword: '' });
+    this.exitSearchMode();
+  },
+
+  /**
+   * 取消搜索
+   */
+  onSearchCancel() {
+    this.setData({ searchKeyword: '' });
+    this.exitSearchMode();
+  },
+
+  /**
+   * 退出搜索模式
+   */
+  exitSearchMode() {
+    this.setData({
+      isSearching: false,
+      searchEmpty: false,
+      searchKeyword: ''
+    });
+    // 恢复当前分类下的商品
+    this.restoreCategoryFilter();
+  },
+
+  /**
+   * 恢复当前分类筛选
+   */
+  restoreCategoryFilter() {
+    const { activeCategory, categories, allProducts } = this.data;
+    if (activeCategory > 0 && categories[activeCategory]) {
+      this.filterByCategory(categories[activeCategory].name);
+    } else {
+      this.setData({ products: allProducts });
+    }
+  },
+
+  // ────────── 分类筛选 ──────────
+
   onCategoryTap(e) {
     const index = e.currentTarget.dataset.index;
     const category = this.data.categories[index];
     
-    this.setData({
-      activeCategory: index
-    });
+    // 如果正在搜索，退出搜索模式
+    if (this.data.isSearching) {
+      this.exitSearchMode();
+    }
     
-    // 根据分类筛选商品
+    this.setData({ activeCategory: index });
     this.filterByCategory(category.name);
   },
 
@@ -160,27 +275,15 @@ Page({
    * @param {string} categoryName - 分类名称
    */
   filterByCategory(categoryName) {
-    wx.showLoading({ title: '加载中...' });
+    const { allProducts } = this.data;
+    const filtered = categoryName && categoryName !== '全部咖啡'
+      ? allProducts.filter(item => item.category === categoryName)
+      : allProducts;
     
-    const db = wx.cloud.database();
-    const query = categoryName && categoryName !== '全部咖啡'
-      ? db.collection('goods').where({ isAvailable: true, category: categoryName })
-      : db.collection('goods').where({ isAvailable: true });
-    
-    query.orderBy('category', 'asc').get()
-      .then((res) => {
-        wx.hideLoading();
-        const products = (res.data || []).map(item => ({
-          ...item,
-          rating: item.rating || 4.8
-        }));
-        this.setData({ products: products });
-      })
-      .catch((err) => {
-        wx.hideLoading();
-        console.error('筛选商品失败：', err);
-        wx.showToast({ title: '网络错误', icon: 'none' });
-      });
+    this.setData({
+      products: filtered,
+      loading: false
+    });
   },
 
   /**
@@ -229,22 +332,13 @@ Page({
     });
   },
 
-  // 搜索点击
-  onSearchTap() {
-    wx.showToast({
-      title: '搜索功能开发中',
-      icon: 'none',
-      duration: 1000
-    });
-  },
-
-  // 筛选点击
+  // 筛选按钮点击
   onFilterTap() {
-    wx.showToast({
-      title: '筛选功能开发中',
-      icon: 'none',
-      duration: 1000
-    });
+    const { activeCategory, categories } = this.data;
+    const nextIndex = (activeCategory + 1) % categories.length;
+    const category = categories[nextIndex];
+    this.setData({ activeCategory: nextIndex });
+    this.filterByCategory(category.name);
   },
 
   // 导航栏点击
